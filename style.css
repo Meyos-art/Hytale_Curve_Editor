@@ -272,6 +272,11 @@ canvas { display: block; width: 100%; background: #20242b; border-radius: 8px; m
   .point-drawer:not([open]) > summary { height: 34px; padding: 0; writing-mode: horizontal-tb; }
   .point-drawer:not([open]) > summary::before { margin: 0 8px 0 0; transform: rotate(-90deg); }
 }
+/* A narrow browser has no room to the left of the full-width editor.
+   Keep the graph's dimensions intact and bring the open panel on top of it. */
+@media (max-width: 1650px) {
+  .point-drawer[open] { right: auto; left: 0; }
+}
 @media (max-width: 700px) {
   .shortcut-group { width: 100%; gap: 7px 10px; }
   .shortcut-guide { padding: 10px; }
