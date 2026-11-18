@@ -10,14 +10,16 @@
     <main>
       <header>
         <span class="eyebrow">WORLDGEN / TERRAIN TOOLS</span>
-        <h1>Curve editor</h1>
+        <div class="header-title-row">
+          <h1>Curve editor</h1>
+          <nav class="view-switch" aria-label="Active tool">
+            <span class="switch-thumb" aria-hidden="true"></span>
+            <button id="tab-editor" aria-pressed="true" aria-controls="editor-view">Curve Editor</button>
+            <button id="tab-inverter" aria-pressed="false" aria-controls="inverter-view">Curve Inverter</button>
+          </nav>
+        </div>
         <p>Create and adjust your curves, then copy the Hytale nodes.</p>
       </header>
-      <nav class="view-switch" aria-label="Active tool">
-        <span class="switch-thumb" aria-hidden="true"></span>
-        <button id="tab-editor" aria-pressed="true" aria-controls="editor-view">Curve Editor</button>
-        <button id="tab-inverter" aria-pressed="false" aria-controls="inverter-view">Curve Inverter</button>
-      </nav>
       <div id="inverter-view" hidden>
         <button id="inverter-help-toggle" class="help-toggle" aria-expanded="false" aria-controls="inverter-help">How to use it</button>
         <div id="inverter-help" class="inverter-explainer" hidden>
@@ -211,12 +213,7 @@
           </section>
         </div>
       </div>
-      <section id="editor-view" aria-labelledby="editor-title">
-        <div class="section-title">
-          <div>
-            <h2 id="editor-title">Curve editor</h2>
-          </div>
-        </div>
+      <section id="editor-view" aria-label="Curve editor">
         <div class="editor-layout">
           <div class="bounds-bar">
             <div class="bounds-controls">
@@ -253,7 +250,34 @@
             </div>
             <p id="bounds-status" class="hint" role="status" aria-live="polite"></p>
           </div>
-          <div class="editor-graph">
+          <div class="editor-workarea">
+            <details class="point-drawer">
+              <summary title="Control points">Control points</summary>
+              <div class="coordinate-inspector">
+                <div class="coordinate-matrix point-controls">
+                  <span class="coordinate-heading">Control point</span>
+                  <span class="coordinate-heading axis-x">X <small>In</small></span>
+                  <span class="coordinate-heading axis-y">Y <small>Out</small></span>
+                  <span></span>
+                  <select id="editor-selection" aria-label="Selected point" title="Select a control point"></select>
+                  <input id="editor-x" aria-label="In · X" type="number" step="any">
+                  <input id="editor-y" aria-label="Out · Y" type="number" step="any">
+                  <button id="editor-delete" aria-label="Delete point" title="Delete point">×</button>
+                </div>
+                <details id="editor-handles" hidden>
+                  <summary title="Coordinates of the selected point's Bezier handles">Handle coordinates</summary>
+                  <div class="coordinate-matrix handle-matrix">
+                    <span class="coordinate-row-label">Left</span>
+                    <input id="editor-lx" aria-label="Left · In" type="number" step="any">
+                    <input id="editor-ly" aria-label="Left · Out" type="number" step="any">
+                    <span class="coordinate-row-label">Right</span>
+                    <input id="editor-rx" aria-label="Right · In" type="number" step="any">
+                    <input id="editor-ry" aria-label="Right · Out" type="number" step="any">
+                  </div>
+                </details>
+              </div>
+            </details>
+            <div class="editor-graph">
             <div class="editor-toolbar">
               <label>
                 Interpolation
@@ -304,31 +328,9 @@
                 <span><kbd>Ctrl + Shift + Z</kbd> Redo</span>
               </div>
             </div>
+            </div>
           </div>
           <div class="editor-settings">
-            <div class="coordinate-inspector">
-              <div class="coordinate-matrix point-controls">
-                <span class="coordinate-heading">Control point</span>
-                <span class="coordinate-heading axis-x">X <small>In</small></span>
-                <span class="coordinate-heading axis-y">Y <small>Out</small></span>
-                <span></span>
-                <select id="editor-selection" aria-label="Selected point" title="Select a control point"></select>
-                <input id="editor-x" aria-label="In · X" type="number" step="any">
-                <input id="editor-y" aria-label="Out · Y" type="number" step="any">
-                <button id="editor-delete" aria-label="Delete point" title="Delete point">×</button>
-              </div>
-              <details id="editor-handles" hidden>
-                <summary title="Coordinates of the selected point's Bezier handles">Handle coordinates</summary>
-                <div class="coordinate-matrix handle-matrix">
-                  <span class="coordinate-row-label">Left</span>
-                  <input id="editor-lx" aria-label="Left · In" type="number" step="any">
-                  <input id="editor-ly" aria-label="Left · Out" type="number" step="any">
-                  <span class="coordinate-row-label">Right</span>
-                  <input id="editor-rx" aria-label="Right · In" type="number" step="any">
-                  <input id="editor-ry" aria-label="Right · Out" type="number" step="any">
-                </div>
-              </details>
-            </div>
             <div class="editor-export">
               <div class="export-settings">
                 <div class="output-label">

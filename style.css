@@ -33,10 +33,11 @@
 [hidden] { display: none !important; }
 body { margin: 0; background: var(--page); color: var(--text); font: 15px/1.55 system-ui, sans-serif; }
 main { max-width: 1360px; margin: auto; padding: 44px 32px; }
-header { position: relative; margin-bottom: 30px; }
+header { position: relative; margin-bottom: 26px; }
 .eyebrow { font-size: 11px; letter-spacing: .18em; color: var(--muted); }
 h1 { font-size: clamp(28px, 4vw, 46px); font-weight: 550; letter-spacing: -.045em; line-height: 1.15; margin: 14px 0; }
 header p { color: var(--muted); margin: 0 0 14px; }
+.header-title-row { display: flex; align-items: center; justify-content: space-between; gap: 28px; }
 h2 { font-size: 13px; letter-spacing: .07em; font-weight: 600; margin: 22px 0 16px; }
 section { min-width: 0; }
 label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 10px; }
@@ -70,18 +71,15 @@ canvas { display: block; width: 100%; background: #20242b; border-radius: 8px; m
 .clipboard-fallback { position: fixed; left: -10000px; top: 0; opacity: 0; }
 
 /* Main navigation */
-.view-switch { position: relative; display: grid; grid-template-columns: 1fr 1fr; max-width: 420px; padding: 4px; margin: 0 0 28px; background: var(--surface); border: 1px solid var(--border); border-radius: 9px; isolation: isolate; }
+.view-switch { position: relative; display: grid; grid-template-columns: 1fr 1fr; flex: 0 1 420px; width: 420px; padding: 4px; margin: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 9px; isolation: isolate; }
 .view-switch button { border: 0; background: transparent; margin: 0; padding: 12px 20px; color: var(--muted); z-index: 1; }
 .view-switch button[aria-pressed="true"] { color: #fff; }
 .switch-thumb { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px); border-radius: 6px; background: #3f5974; box-shadow: 0 2px 4px #0005; transition: transform .18s ease; }
 .is-inverter .switch-thumb { transform: translateX(100%); }
 
 /* Editor frame, bounds, and toolbar */
-#editor-view { max-width: 1080px; margin: auto; }
-#editor-view h2 { font-size: 20px; letter-spacing: -.02em; margin: 0; }
-.section-title { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-#editor-view > .section-title { margin: 0 0 18px; }
-.editor-layout { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); box-shadow: 0 8px 30px #0002; overflow: hidden; }
+#editor-view { max-width: 1240px; margin: auto; }
+.editor-layout { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); box-shadow: 0 8px 30px #0002; overflow: visible; }
 #editor-view input, #editor-view select { border-color: var(--field-border); border-radius: 4px; padding: 7px 9px; }
 #editor-view input[type="number"] { padding: 6px 8px; }
 .bounds-bar { padding: 10px 12px; background: #3c3f44; border-bottom: 1px solid var(--border); }
@@ -103,9 +101,19 @@ canvas { display: block; width: 100%; background: #20242b; border-radius: 8px; m
 .toolbar-spacer { flex: 1; }
 #editor-bezier-tools { display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex-wrap: wrap; margin-left: auto; }
 #editor-bezier-tools select { height: 36px; }
-/* The graph is square: one unit on X occupies the same physical distance as
-   one unit on Y. It remains centred while the toolbar keeps its compact row. */
-.editor-graph canvas { display: block; width: min(100%, 680px); height: auto; touch-action: none; cursor: crosshair; background: var(--graph); border-radius: 0; margin: 0 auto; }
+
+/* The point inspector opens outside the editor frame, without reducing the graph. */
+.editor-workarea { position: relative; background: var(--graph); }
+.point-drawer { position: absolute; z-index: 3; top: 0; right: 100%; width: 410px; min-width: 0; margin: 0; background: var(--inset); border: 1px solid var(--border); border-radius: 7px 0 0 7px; box-shadow: 0 8px 24px #0005; overflow: hidden; transition: width .16s ease; }
+.point-drawer:not([open]) { width: 28px; height: 34px; }
+.point-drawer > summary { display: flex; align-items: center; min-height: 54px; margin: 0; padding: 0 12px; color: #c8d4e1; font-size: 12px; font-weight: 600; cursor: pointer; list-style: none; user-select: none; }
+.point-drawer > summary::-webkit-details-marker { display: none; }
+.point-drawer > summary::before { content: '‹'; margin-right: 8px; color: var(--accent); font-size: 18px; line-height: 1; }
+.point-drawer:not([open]) > summary { justify-content: center; height: 100%; min-height: 0; padding: 0; font-size: 0; }
+.point-drawer:not([open]) > summary::before { margin: 0; transform: rotate(180deg); }
+.point-drawer .coordinate-inspector { width: auto; max-width: none; margin: 0; padding: 12px; background: transparent; border: 0; border-top: 1px solid var(--border); border-radius: 0; }
+/* Square mode keeps a centred square scale while the canvas itself spans the editor. */
+.editor-graph canvas { display: block; width: 100%; height: auto; touch-action: none; cursor: crosshair; background: var(--graph); border-radius: 0; margin: 0 auto; }
 .editor-graph canvas.is-rectangular { width: 100%; }
 #editor-canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .editor-settings { padding: 0 14px 14px; }
@@ -257,7 +265,12 @@ canvas { display: block; width: 100%; background: #20242b; border-radius: 8px; m
 @media (max-width: 760px) {
   .workspace, .plots { grid-template-columns: 1fr; }
   header h1 { font-size: 32px; }
+  .header-title-row { align-items: flex-start; }
   .inverter-steps, .inverter-math dl { grid-template-columns: 1fr; gap: 14px; }
+  .editor-workarea { display: block; }
+  .point-drawer, .point-drawer:not([open]) { position: static; width: 100%; }
+  .point-drawer:not([open]) > summary { height: 34px; padding: 0; writing-mode: horizontal-tb; }
+  .point-drawer:not([open]) > summary::before { margin: 0 8px 0 0; transform: rotate(-90deg); }
 }
 @media (max-width: 700px) {
   .shortcut-group { width: 100%; gap: 7px 10px; }
@@ -271,7 +284,8 @@ canvas { display: block; width: 100%; background: #20242b; border-radius: 8px; m
   .editor-toolbar label { width: 100%; }
   .editor-toolbar select { flex: 1; }
   #editor-bezier-tools { width: 100%; }
-  .view-switch { max-width: none; }
+  .header-title-row { display: block; }
+  .view-switch { width: 100%; max-width: none; margin: 12px 0 0; }
   .view-switch button { padding: 12px 8px; }
   .bounds-controls { gap: 10px; }
 }

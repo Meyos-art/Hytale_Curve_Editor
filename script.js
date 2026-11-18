@@ -1313,7 +1313,7 @@
     if (!bounds) fit();
     canvas.classList.toggle('is-rectangular', !squareView);
     const w = canvas.clientWidth,
-      h = squareView ? w : 440,
+      h = squareView ? Math.min(w, 680) : Math.max(400, Math.min(560, w * 440 / 1078)),
       dpr = window.devicePixelRatio || 1;
     canvas.style.height = h + 'px';
     canvas.width = Math.round(w * dpr);
@@ -1332,14 +1332,14 @@
       } = bounds;
     let L, R, T, B, viewX0, viewX1, viewY0, viewY1;
     if (squareView) {
-      const size = Math.min(w - leftGutter - rightGutter, h - topGutter - bottomGutter),
-        visibleSpan = Math.max(x1 - x0, y1 - y0);
-      L = leftGutter + (w - leftGutter - rightGutter - size) / 2;
-      R = L + size;
-      T = topGutter + (h - topGutter - bottomGutter - size) / 2;
-      B = T + size;
-      viewX0 = (x0 + x1 - visibleSpan) / 2;
-      viewX1 = viewX0 + visibleSpan;
+      const visibleSpan = Math.max(x1 - x0, y1 - y0);
+      L = leftGutter;
+      R = w - rightGutter;
+      T = topGutter;
+      B = h - bottomGutter;
+      const xSpan = visibleSpan * (R - L) / (B - T);
+      viewX0 = (x0 + x1 - xSpan) / 2;
+      viewX1 = viewX0 + xSpan;
       viewY0 = (y0 + y1 - visibleSpan) / 2;
       viewY1 = viewY0 + visibleSpan;
     } else {
@@ -1371,24 +1371,37 @@
       y1: viewY1
     };
     ctx.font = '12px system-ui';
-    for (let i = 0; i <= 20; i++) {
-      const x = viewX0 + (viewX1 - viewX0) * i / 20,
-        y = viewY0 + (viewY1 - viewY0) * i / 20;
-      ctx.strokeStyle = i % 5 === 0 ? '#494949' : '#303030';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(X(x), T);
-      ctx.lineTo(X(x), B);
-      ctx.moveTo(L, Y(y));
-      ctx.lineTo(R, Y(y));
-      ctx.stroke();
-    }
-    for (let i = 0; i <= 4; i++) {
-      const x = viewX0 + (viewX1 - viewX0) * i / 4,
-        y = viewY0 + (viewY1 - viewY0) * i / 4;
+    const visibleYSpan = viewY1 - viewY0,
+      niceGridStep = target => {
+        const magnitude = 10 ** Math.floor(Math.log10(target)),
+          steps = [1, 2, 5, 10];
+        return magnitude * steps.find(step => target <= magnitude * step);
+      },
+      majorStep = visibleYSpan <= 3 ? .5 : niceGridStep(visibleYSpan / 4),
+      gridStep = majorStep / 5,
+      firstGridValue = (start, step) => Math.ceil((start - step * 1e-8) / step) * step,
+      drawGridLine = (value, vertical, major) => {
+        ctx.strokeStyle = major ? '#555a61' : '#31353b';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        if (vertical) {
+          ctx.moveTo(X(value), T);
+          ctx.lineTo(X(value), B);
+        } else {
+          ctx.moveTo(L, Y(value));
+          ctx.lineTo(R, Y(value));
+        }
+        ctx.stroke();
+      };
+    for (let x = firstGridValue(viewX0, gridStep); x <= viewX1 + gridStep * 1e-8; x += gridStep) drawGridLine(x, true, Math.abs(x / majorStep - Math.round(x / majorStep)) < 1e-7);
+    for (let y = firstGridValue(viewY0, gridStep); y <= viewY1 + gridStep * 1e-8; y += gridStep) drawGridLine(y, false, Math.abs(y / majorStep - Math.round(y / majorStep)) < 1e-7);
+    for (let x = firstGridValue(viewX0, majorStep); x <= viewX1 + majorStep * 1e-8; x += majorStep) {
       ctx.fillStyle = '#b3b3b3';
       ctx.textAlign = 'center';
       ctx.fillText(Number(x.toPrecision(4)), X(x), B + 24);
+    }
+    for (let y = firstGridValue(viewY0, majorStep); y <= viewY1 + majorStep * 1e-8; y += majorStep) {
+      ctx.fillStyle = '#b3b3b3';
       ctx.textAlign = 'right';
       ctx.fillText(Number(y.toPrecision(4)), L - 8, Y(y) + 4);
     }
