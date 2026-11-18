@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Terrain · Curve tools</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <main>
+      <header>
+        <span class="eyebrow">WORLDGEN / TERRAIN TOOLS</span>
+        <h1>Curve editor</h1>
+        <p>Create and adjust your curves, then copy the Hytale nodes.</p>
+      </header>
+      <nav class="view-switch" aria-label="Active tool">
+        <span class="switch-thumb" aria-hidden="true"></span>
+        <button id="tab-editor" aria-pressed="true" aria-controls="editor-view">Curve Editor</button>
+        <button id="tab-inverter" aria-pressed="false" aria-controls="inverter-view">Curve Inverter</button>
+      </nav>
+      <div id="inverter-view" hidden>
+        <button id="inverter-help-toggle" class="help-toggle" aria-expanded="false" aria-controls="inverter-help">How to use it</button>
+        <div id="inverter-help" class="inverter-explainer" hidden>
+          <p class="explainer-title">Apply your terrain profile to 2D noise.</p>
+          <p>Especially useful for DistanceS and DistanceExponential curves. Monotonic Manual curves are also supported.</p>
+          <ol class="inverter-steps">
+            <li>
+              <span class="step-number">1</span>
+              <span><strong>Paste your height curve</strong><small>The curve that currently maps height to density.</small></span>
+            </li>
+            <li>
+              <span class="step-number">2</span>
+              <span><strong>Copy the inverse curve</strong><small>Use it to map your 2D noise.</small></span>
+            </li>
+            <li>
+              <span class="step-number">3</span>
+              <span><strong>Add the linear height term</strong><small>The terrain surface stays where the sum is zero.</small></span>
+            </li>
+          </ol>
+          <details class="inverter-math">
+            <summary>How the calculation works</summary>
+            <dl>
+              <div>
+                <dt>
+                  Find the surface height
+                </dt>
+                <dd>
+                  <code>H = C⁻¹(−noise2D)</code>
+                </dd>
+              </div>
+              <div>
+                <dt>
+                  Convert it to the noise output
+                </dt>
+                <dd>
+                  <code>G = −L(H)</code>
+                </dd>
+              </div>
+              <div>
+                <dt>
+                  Keep the same surface
+                </dt>
+                <dd>
+                  <code>G(noise2D) + L(Y) = 0</code>
+                </dd>
+              </div>
+            </dl>
+            <p>C is your original height curve. H is the surface height. L is the new linear height mapping. G is the exported noise curve. The required height mapping is shown below after you paste your nodes.</p>
+          </details>
+        </div>
+        <div class="workspace">
+          <section class="import-panel">
+            <h2>01 / Input nodes</h2>
+            <details class="supported-nodes">
+              <summary>Supported nodes</summary>
+              <ul>
+                <li>
+                  <strong>DistanceS</strong>
+                  · S curve
+                </li>
+                <li>
+                  <strong>DistanceExponential</strong>
+                  · Exponential curve
+                </li>
+                <li>
+                  <strong>Manual</strong>
+                  · Monotonic curve points
+                </li>
+                <li>
+                  <strong>Not / Inverter</strong>
+                  · Wrappers around a supported curve
+                </li>
+                <li>
+                  <strong>Sum / Multiplier</strong>
+                  · Combined curves; set height bounds manually
+                </li>
+                <li>
+                  <strong>Constant</strong>
+                  · In combinations only; not invertible on its own
+                </li>
+              </ul>
+              <p>Paste the full curve chain. A CurveMapper containing a single curve is also accepted. The selected height range must have a unique inverse.</p>
+            </details>
+            <label for="source">JSON copied from Hytale</label>
+            <textarea id="source" spellcheck="false" rows="12" placeholder="Paste the output node here, including its Curve or Points children…"></textarea>
+            <p id="context" class="hint" aria-live="polite"></p>
+            <div id="noise-range-help" popover class="noise-help-panel">
+              <strong>Choose the range of your 2D noise.</strong>
+              <p><b>In</b> keeps the original noise values. <b>Out</b> expresses the resulting height on the selected normalized scale.</p>
+              <p>Each noise value must correspond to one height. If the height curve changes direction, choose a height interval covering only one branch.</p>
+            </div>
+            <fieldset class="range-choice">
+              <legend>Input noise <button type="button" class="noise-help-button" popovertarget="noise-range-help" aria-label="About input noise">?</button></legend>
+              <label>
+                <input id="range-signed" name="noise-range" type="radio" value="signed" checked>
+                −1 to 1
+              </label>
+              <label title="0 to 1 or −1 to 0, detected from your curve">
+                <input id="range-unit" name="noise-range" type="radio" value="unit" aria-label="0 to 1 or −1 to 0">
+                0 ↔ ±1
+              </label>
+            </fieldset>
+            <details>
+              <summary>Adjust heights</summary>
+              <label class="auto">
+                <input id="auto" type="checkbox" checked>
+                Infer the height range from the nodes
+              </label>
+              <div class="fields">
+                <label>
+                  Minimum height
+                  <input id="h0" type="number" step="any" value="0">
+                </label>
+                <label>
+                  Maximum height
+                  <input id="h1" type="number" step="any" value="125">
+                </label>
+                <label>
+                  Input multiplier
+                  <input id="scale" type="number" step="any" value="1">
+                </label>
+                <label>
+                  Input offset
+                  <input id="offset" type="number" step="any" value="0">
+                </label>
+                <label>
+                  Density gain
+                  <input id="gain" type="number" step="any" value="1">
+                </label>
+                <label>
+                  Density offset
+                  <input id="bias" type="number" step="any" value="0">
+                </label>
+              </div>
+              <p class="hint">C(Y) = gain × curve(multiplier × Y + input offset) + density offset. Slider and BaseHeight are not applied automatically.</p>
+            </details>
+          </section>
+          <section class="visual-panel">
+            <div class="plots">
+              <div class="plot-panel">
+                <h2>02 / Input curve C</h2>
+                <p class="chart-subtitle">Your pasted nodes</p>
+                <canvas id="source-plot" height="290" role="img" aria-label="Input curve: actual height on the X axis, density C(Y) on the Y axis"></canvas>
+                <p class="axis-note">X: actual height · Y: density C(Y)</p>
+              </div>
+              <div class="plot-panel">
+                <h2>03 / Noise curve G</h2>
+                <p class="chart-subtitle">Inverse, normalized to be added to L(Y)</p>
+                <canvas id="plot" height="290" role="img" aria-label="Exported curve: noise2D on the X axis, G to add to the linear height curve on the Y axis"></canvas>
+                <p class="axis-note">X: noise2D (In) · Y: G value (Out)</p>
+              </div>
+            </div>
+            <details class="probe-disclosure">
+              <summary>Test a noise value</summary>
+              <div class="probe">
+                <label>
+                  Noise
+                  <input id="probe" type="number" value="0" step="0.01" min="-1" max="1">
+                </label>
+                <output id="probeResult" aria-live="polite"></output>
+              </div>
+            </details>
+            <div id="inverse-output-settings" class="import-sampling" hidden>
+              <label>
+                Output setting
+                <select id="inverse-output-mode">
+                  <option value="count">Point count</option>
+                  <option value="tolerance">Automatic precision</option>
+                </select>
+              </label>
+              <label>
+                Output point count
+                <input id="count" type="number" min="2" max="4097" step="1" value="257">
+              </label>
+              <label hidden>
+                Precision (Out error target)
+                <input id="inverse-tolerance" type="number" min="0.000001" max="1" step="0.001" value="0.001">
+              </label>
+              <details class="output-help">
+                <summary aria-label="About inverse output settings" title="About inverse output settings">ⓘ</summary>
+                <p>Point count sets the total exported points. Automatic precision adds points where needed to follow the inverse curve. Its Out error is estimated numerically, not guaranteed. Manual curves keep their exact inverse vertices.</p>
+              </details>
+            </div>
+            <div class="output-actions">
+              <button id="copy" class="primary" disabled>Copy output nodes</button>
+              <span id="copy-status" role="status" aria-live="polite"></span>
+            </div>
+            <div id="status" role="status" aria-live="polite">
+              Paste your nodes to calculate their inverse.
+            </div>
+          </section>
+        </div>
+      </div>
+      <section id="editor-view" aria-labelledby="editor-title">
+        <div class="section-title">
+          <div>
+            <h2 id="editor-title">Curve editor</h2>
+          </div>
+        </div>
+        <div class="editor-layout">
+          <div class="bounds-bar">
+            <div class="bounds-controls">
+              <label>
+                Bounds
+                <select id="bounds-preset">
+                  <option value="signed">−1 to 1</option>
+                  <option value="unit">0 to 1</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </label>
+              <label class="auto" title="Fix the first and last X coordinates to the selected range. Y stays editable.">
+                <input id="lock-endpoints" type="checkbox" checked>
+                Lock endpoints
+              </label>
+              <label class="auto" title="Keep point and handle Y values inside the selected range to prevent overshoot.">
+                <input id="clamp-output" type="checkbox" checked>
+                Clamp output
+              </label>
+              <div class="bounds-actions">
+                <button id="bounds-fit" title="Rescale all points and handles into the selected range while preserving the curve shape.">Fit curve</button>
+              </div>
+            </div>
+            <div id="bound-custom" class="coordinate-matrix bounds-matrix" hidden>
+              <span></span>
+              <span class="coordinate-heading">Min</span>
+              <span class="coordinate-heading">Max</span>
+              <span class="axis-tag axis-x">X <small>In</small></span>
+              <input id="bound-x0" aria-label="X minimum" type="number" step="any" value="-1">
+              <input id="bound-x1" aria-label="X maximum" type="number" step="any" value="1">
+              <span class="axis-tag axis-y">Y <small>Out</small></span>
+              <input id="bound-y0" aria-label="Y minimum" type="number" step="any" value="-1">
+              <input id="bound-y1" aria-label="Y maximum" type="number" step="any" value="1">
+            </div>
+            <p id="bounds-status" class="hint" role="status" aria-live="polite"></p>
+          </div>
+          <div class="editor-graph">
+            <div class="editor-toolbar">
+              <label>
+                Interpolation
+                <select id="editor-mode">
+                  <option value="linear">Linear</option>
+                  <option value="bezier">Bezier</option>
+                </select>
+              </label>
+              <button id="editor-fit" title="Show the entire curve">Frame all</button>
+              <button id="editor-aspect" class="icon-button" type="button" aria-pressed="true" aria-label="Square scale: on" title="Square scale: on — switch to rectangular view">▣</button>
+              <label title="Hold Shift while clicking or dragging a point to snap X and Y. Bounds and point order take priority.">
+                Snap
+                <select id="editor-snap" aria-label="Snap step">
+                  <option value="1">1</option>
+                  <option value="0.1" selected>0.1</option>
+                  <option value="0.01">0.01</option>
+                </select>
+              </label>
+              <span class="toolbar-spacer"></span>
+              <div id="editor-bezier-tools" role="group" aria-label="Bezier controls" hidden>
+                <button id="editor-vector" title="Switch to free handles aligned with neighboring segments">Vector</button>
+                <button id="editor-auto" title="Smooth the handles of the selected point">Auto</button>
+                <select id="editor-handle-mode" aria-label="Handle mode" title="V: toggle Free / Aligned. Free: independent handles. Aligned: linked tangent direction with independent lengths.">
+                  <option value="free">Free handles</option>
+                  <option value="aligned">Aligned handles</option>
+                </select>
+                <button id="editor-smooth" title="Smooth the handles of all points">Smooth all</button>
+              </div>
+            </div>
+            <canvas id="editor-canvas" height="440" tabindex="0" aria-label="Curve editor. Right-click to add a point. Select a point with the mouse, or use the point selector and In and Out fields."></canvas>
+            <div class="shortcut-guide" aria-label="Editor shortcuts">
+              <div class="shortcut-group">
+                <span class="shortcut-heading">Points</span>
+                <span><kbd>Right-click</kbd> Add</span>
+                <span><kbd>Left-drag</kbd> Move</span>
+                <span><kbd>Shift + click/drag</kbd> Snap</span>
+                <span><kbd>Delete / X</kbd> Remove</span>
+                <span title="Toggle Free / Aligned handles in Bezier mode"><kbd>V</kbd> Free / Aligned <small>Bezier</small></span>
+              </div>
+              <div class="shortcut-group shortcut-view">
+                <span class="shortcut-heading">View</span>
+                <span><kbd>Middle-drag</kbd> Pan</span>
+                <span><kbd>Scroll</kbd> Zoom</span>
+              </div>
+              <div class="shortcut-group">
+                <span class="shortcut-heading">History</span>
+                <span><kbd>Ctrl + Z</kbd> Undo</span>
+                <span><kbd>Ctrl + Shift + Z</kbd> Redo</span>
+              </div>
+            </div>
+          </div>
+          <div class="editor-settings">
+            <div class="coordinate-inspector">
+              <div class="coordinate-matrix point-controls">
+                <span class="coordinate-heading">Control point</span>
+                <span class="coordinate-heading axis-x">X <small>In</small></span>
+                <span class="coordinate-heading axis-y">Y <small>Out</small></span>
+                <span></span>
+                <select id="editor-selection" aria-label="Selected point" title="Select a control point"></select>
+                <input id="editor-x" aria-label="In · X" type="number" step="any">
+                <input id="editor-y" aria-label="Out · Y" type="number" step="any">
+                <button id="editor-delete" aria-label="Delete point" title="Delete point">×</button>
+              </div>
+              <details id="editor-handles" hidden>
+                <summary title="Coordinates of the selected point's Bezier handles">Handle coordinates</summary>
+                <div class="coordinate-matrix handle-matrix">
+                  <span class="coordinate-row-label">Left</span>
+                  <input id="editor-lx" aria-label="Left · In" type="number" step="any">
+                  <input id="editor-ly" aria-label="Left · Out" type="number" step="any">
+                  <span class="coordinate-row-label">Right</span>
+                  <input id="editor-rx" aria-label="Right · In" type="number" step="any">
+                  <input id="editor-ry" aria-label="Right · Out" type="number" step="any">
+                </div>
+              </details>
+            </div>
+            <div class="editor-export">
+              <div class="export-settings">
+                <div class="output-label">
+                  <label for="editor-output-mode">Output setting</label>
+                  <details class="output-help">
+                    <summary aria-label="About output settings" title="About output settings">ⓘ</summary>
+                    <p id="editor-output-help">Choose how many points to export. Endpoints and control points are always included.</p>
+                  </details>
+                </div>
+                <select id="editor-output-mode" aria-label="Output setting">
+                  <option value="count">Point count</option>
+                  <option value="tolerance">Automatic precision</option>
+                </select>
+                <label>
+                  Output point count
+                  <input id="editor-count" type="number" min="2" max="4097" step="1" value="32">
+                </label>
+                <label hidden>
+                  Bezier precision (maximum Out error)
+                  <input id="editor-tolerance" type="number" value="0.001" min="0.000001" max="1" step="0.001">
+                </label>
+              </div>
+              <div class="export-preview">
+                <h2>Exported segment preview</h2>
+                <label class="auto">
+                  <input id="editor-reference" type="checkbox" checked>
+                  Compare with the original curve
+                </label>
+                <canvas id="editor-preview" height="220" role="img" aria-label="Exported Manual Curve preview: orange segments and points, original curve as a dashed gray line"></canvas>
+              </div>
+              <button id="editor-copy" class="primary">Copy output nodes</button>
+              <p id="editor-status" role="status" aria-live="polite"></p>
+            </div>
+          </div>
+        </div>
+        <details class="editor-import">
+          <summary><span>Import nodes into the editor</span><small>Paste a curve chain</small></summary>
+          <div class="editor-import-content">
+          <label for="editor-source">Curve JSON to edit</label>
+          <textarea id="editor-source" rows="5" spellcheck="false" placeholder="Paste a Manual Curve, DistanceS, DistanceExponential, or a curve chain…"></textarea>
+          <div id="import-sampling" class="import-sampling" hidden>
+            <label>
+              Import sampling
+              <select id="import-mode">
+                <option value="count">Point count</option>
+                <option value="tolerance">Automatic precision</option>
+              </select>
+            </label>
+            <label>
+              Import point count
+              <input id="import-count" type="number" min="2" max="4097" step="1" value="65">
+            </label>
+            <label hidden>
+              Import precision (Out error target)
+              <input id="import-tolerance" type="number" min="0.000001" max="1" step="0.001" value="0.001">
+            </label>
+          </div>
+          <button id="editor-import">Load curve</button>
+          <p class="hint">Manual curves keep their original points. Other curves use the sampling settings above. Automatic precision adapts point spacing using numerical error estimates.</p>
+          <p id="editor-import-status" role="status"></p>
+          </div>
+        </details>
+      </section>
+    </main>
+    <dialog id="curve-confirm" aria-labelledby="curve-confirm-title" aria-describedby="curve-confirm-description">
+      <h2 id="curve-confirm-title"></h2>
+      <p id="curve-confirm-description"></p>
+      <p class="confirm-undo">You can undo this with <kbd>Ctrl + Z</kbd>.</p>
+      <div class="confirm-actions">
+        <button id="curve-confirm-cancel" autofocus>Cancel</button>
+        <button id="curve-confirm-accept">Continue</button>
+      </div>
+    </dialog>
+    
+    
+    
+    
+    
+    
+    
+    <script src="script.js"></script>
+  </body>
+</html>
+
